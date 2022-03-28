@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300&display=swap" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/eeb4f50936.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="./style.css">
+    <title>ToDo List</title>
+</head>
+<header>
+    <h1>ToDo List</h1>
+</header>
+
+<body>
+    <!-- Форма, для добавления задач -->
+    <form>
+
+        <input type='text' class='todo-input'>
+        <button class="todo-button" type="submit">
+            <i class="fa-solid fa-map-pin"></i>
+        </button>
+
+        <!--Контейнер для сортировки задач -->
+        <div class="select">
+            <select name="todos" id="filter-todo">
+                <option value="All">All</option>
+                <option value="Completed">Completed</option>
+                <option value="Uncompleted">Uncompleted</option>
+            </select>
+        </div>
+
+    </form>
+
+    <!-- Контейнер для хранения, отображения и изменения задач -->
+    <div class="todo-container">
+        <ul class="todo-list"></ul>
+    </div>
+    <script src="./app.js"></script>
+</body>
+
+</html>
