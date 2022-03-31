@@ -1,10 +1,12 @@
 // - Объявление переменных, с которыми будем работать
-const allTasks = JSON.parse(localStorage.getItem("allTasks")) || [];
+const allTasks = JSON.parse(sessionStorage.getItem("allTasks")) || [];
+// JSON.parse(localStorage.getItem("allTasks")) ||
 completeTask = false;
 const todoInput = document.querySelector(".todo-input");
 const todoButton = document.querySelector(".todo-button");
 const todoList = document.querySelector(".todo-list");
 const filterOption = document.querySelector("#filter-todo");
+const todoForm = document.querySelector("form");
 
 // - Вешаем прослушку событий на элементы
 todoButton.addEventListener("click", addToDo);
@@ -24,8 +26,6 @@ localStorage.setItem("allTasks", JSON.stringify(allTasks));
 //  Далее при получении данных их нужно спарсить JSON.parse(localStorage.getItem('...'));
 //  Метод JSON.parse() разбирает строку JSON
 const tasks = JSON.parse(localStorage.getItem("allTasks"));
-console.log(tasks);
- */
 
 // async function Func() {
 // 	let response = await fetch("https://swapi.dev/api/people/4");
@@ -37,63 +37,80 @@ console.log(tasks);
 // 	const response = await Func();
 // 	localStorage.setItem("allTasks", response);
 // };
+*/
 
-/**
- * - Либо так:
- *& todoForm.addEventListener('submit', addToDo);
- */
+window.onload = function init(event) {
+	addToDo();
+};
 
 function addToDo(event) {
-	event.preventDefault(); // - Убираем стандартное поведение form
+	// При нажатие на кнопку с типом "submit", form остылает данные на сервер и обновляет страницу.
+	// Чтобы этого не происходило, нужно убрать стандартное поведение form/button
+	// Или установить кнопку type="button"
+	todoForm.onclick = (e) => {
+		e.preventDefault();
+	}; // - Убираем стандартное поведение form
 
-	// - Создаем контейнер для задачи
-	const todoDiv = document.createElement("div");
-	todoDiv.classList.add("todo");
-
-	// - Создаем саму задачу
-	const newTodo = document.createElement("li");
-	newTodo.innerText = todoInput.value;
-	newTodo.classList.add("todo-item");
-	todoDiv.append(newTodo);
-	allTasks.push({
-		text: todoInput.value,
-		isCheck: false,
-	});
-	localStorage.setItem("allTasks", JSON.stringify(allTasks));
-
-	// - Обнуляем input и возвращаем на него фокус
-	todoInput.value = "";
-	todoInput.focus();
-
-	// - Создаем кнопку выполнения задачи
-	const completedButton = document.createElement("button");
-	completedButton;
-	completedButton.innerHTML = '<i class="fa-solid fa-check"></i>';
-	completedButton.classList.add("complete-btn");
-	todoDiv.append(completedButton);
-	// - Создаем кнопку удаления задачи
-	const trashButton = document.createElement("button");
-	trashButton.innerHTML = '<i class="fa-solid fa-trash"></i>'; // - Устанавливаем иконку на кнопку
-	trashButton.classList.add("trash-btn"); // - Добавляем класс для button
-	todoDiv.append(trashButton);
-
-	// При переборе массива объектов, на каждый элемент по ОТДЕЛЬНОСТИ вешается событие клика кнопки
+	if (todoInput.value !== "") {
+		allTasks.push({
+			text: todoInput.value,
+			isCheck: false,
+		});
+	}
+	const todoContent = document.querySelector(".todo-list");
+	while (todoContent.firstChild) {
+		todoContent.removeChild(todoContent.firstChild);
+	}
 	allTasks.map((value, index, array) => {
+		// - Создаем контейнер для задачи
+		const todoDiv = document.createElement("div");
+		todoDiv.classList.add("todo");
+
+		// - Создаем саму задачу
+		const newTodo = document.createElement("li");
+		newTodo.innerText = value.text;
+		newTodo.classList.add("todo-item");
+		todoDiv.append(newTodo);
+
+		sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+
+		// - Обнуляем input и возвращаем на него фокус
+		todoInput.value = "";
+		todoInput.focus();
+
+		// - Создаем кнопку выполнения задачи
+		const completedButton = document.createElement("button");
+		completedButton.innerHTML = '<i class="fa-solid fa-check"></i>';
+		completedButton.classList.add("complete-btn");
+		todoDiv.append(completedButton);
+
+		// - Создаем кнопку удаления задачи
+		const trashButton = document.createElement("button");
+		trashButton.innerHTML = '<i class="fa-solid fa-trash"></i>'; // - Устанавливаем иконку на кнопку
+		trashButton.classList.add("trash-btn"); // - Добавляем класс для button
+		todoDiv.append(trashButton);
+
+		// При переборе массива объектов, на каждый элемент по ОТДЕЛЬНОСТИ вешается событие клика кнопки
 		completedButton.onclick = function () {
 			// При первой итерации цикла - index = 0 - вешаем событие изменения isCheck
 			// При второй итерации цикла - index = 1 - вешаем событие изменения isCheck
 			// И т.д.
 			allTasks[index].isCheck = !allTasks[index].isCheck;
-			localStorage.setItem("allTasks", JSON.stringify(allTasks));
+			sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
 		};
+
 		trashButton.onclick = function () {
 			allTasks.splice(index, 1);
-			localStorage.setItem("allTasks", JSON.stringify(allTasks));
+			sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
 		};
-	});
 
-	// - Выводим в window
-	todoList.append(todoDiv);
+		if (value.isCheck) {
+			todoDiv.classList.toggle("completed");
+		}
+
+		// - Выводим в window
+		todoList.append(todoDiv);
+	});
 }
 
 // - Создание функции по удалению задачи и её выполнению
