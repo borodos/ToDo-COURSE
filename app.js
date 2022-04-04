@@ -1,66 +1,74 @@
 // - Объявление переменных, с которыми будем работать
-const allTasks = JSON.parse(sessionStorage.getItem("allTasks")) || [];
-// JSON.parse(localStorage.getItem("allTasks")) ||
-completeTask = false;
+let allTasks = sessionStorage.getItem("allTasks") || [];
+// let completeTask = false;
+
 const todoInput = document.querySelector(".todo-input");
 const todoButton = document.querySelector(".todo-button");
 const todoList = document.querySelector(".todo-list");
 const filterOption = document.querySelector("#filter-todo");
 const todoForm = document.querySelector("form");
 
-// - Вешаем прослушку событий на элементы
-todoButton.addEventListener("click", addToDo);
-todoList.addEventListener("click", checkTask);
-filterOption.addEventListener("click", filterToDo);
-
-/** localStorage и sessionStorage - хранилища браузера
- * 
-// localStorage - используется, когда нужны постоянные изменения (переход на новую влкадку с тем же адресом, обновление страницы). Хранит значения в виде string
-// sessionStorage - используется, когда данные должны быть доступны только на время работы приложения (при обновлении страницы, перезапуске компа, данные должны удалиться)
-// Данные хранятся в виде "ключ, значение" - ('key', value)
-
-// ----------------- Хранилище -----------------
-// Так как в хранилище данные должны хранится в формате string, то данные нужно преобразовать => JSON.stringify(...);
-localStorage.setItem("allTasks", JSON.stringify(allTasks));
-
-//  Далее при получении данных их нужно спарсить JSON.parse(localStorage.getItem('...'));
-//  Метод JSON.parse() разбирает строку JSON
-const tasks = JSON.parse(localStorage.getItem("allTasks"));
-
-// async function Func() {
-// 	let response = await fetch("https://swapi.dev/api/people/4");
-// 	const json = await response.json();
-// 	return json;
-// }
-
-// window.onload = async function () {
-// 	const response = await Func();
-// 	localStorage.setItem("allTasks", response);
-// };
-*/
-
-window.onload = function init(event) {
-	addToDo();
-};
-
-function addToDo(event) {
+onClickButton = async (event) => {
 	// При нажатие на кнопку с типом "submit", form остылает данные на сервер и обновляет страницу.
 	// Чтобы этого не происходило, нужно убрать стандартное поведение form/button
 	// Или установить кнопку type="button"
-	todoForm.onclick = (e) => {
-		e.preventDefault();
-	}; // - Убираем стандартное поведение form
+	event.preventDefault();
 
 	if (todoInput.value !== "") {
 		allTasks.push({
 			text: todoInput.value,
 			isCheck: false,
 		});
+		const response = await fetch("http://localhost:8000/createTask", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json;charset=utf-8",
+				"Access-Control-Allow-Origin": "*",
+			},
+			body: JSON.stringify({
+				text: todoInput.value,
+				isCheck: false,
+			}),
+		});
+		let result = await response.json();
+		// allTasks = result.data;
+		console.log("result: ", result);
+		console.log("allTasks: ", allTasks);
 	}
+	sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+	addToDo();
+};
+
+// - Вешаем прослушку событий на элементы
+todoButton.addEventListener("click", onClickButton);
+filterOption.addEventListener("click", filterToDo);
+
+/** Fetch API предоставляет интерфейс JavaScript для работы с запросами и ответами HTTP.
+ * fetch('src', metods);
+ * src - API, на который отправляется запрос
+ *  metods - методы обработки запроса
+ */
+
+window.onload = async function init() {
+	const response = await fetch("http://localhost:8000/allTasks", {
+		method: "GET",
+	});
+
+	let result = await response.json();
+	allTasks = result.data;
+	console.log("result.data: ", result.data);
+
+	if (allTasks.length !== 0) {
+		addToDo();
+	}
+};
+
+function addToDo() {
 	const todoContent = document.querySelector(".todo-list");
 	while (todoContent.firstChild) {
 		todoContent.removeChild(todoContent.firstChild);
 	}
+
 	allTasks.map((value, index, array) => {
 		// - Создаем контейнер для задачи
 		const todoDiv = document.createElement("div");
@@ -71,8 +79,6 @@ function addToDo(event) {
 		newTodo.innerText = value.text;
 		newTodo.classList.add("todo-item");
 		todoDiv.append(newTodo);
-
-		sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
 
 		// - Обнуляем input и возвращаем на него фокус
 		todoInput.value = "";
@@ -91,17 +97,14 @@ function addToDo(event) {
 		todoDiv.append(trashButton);
 
 		// При переборе массива объектов, на каждый элемент по ОТДЕЛЬНОСТИ вешается событие клика кнопки
-		completedButton.onclick = function () {
-			// При первой итерации цикла - index = 0 - вешаем событие изменения isCheck
-			// При второй итерации цикла - index = 1 - вешаем событие изменения isCheck
-			// И т.д.
-			allTasks[index].isCheck = !allTasks[index].isCheck;
-			sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+		completedButton.onclick = function (e) {
+			checkTaskMassive(index);
+			checkTaskWindow(e);
 		};
 
-		trashButton.onclick = function () {
-			allTasks.splice(index, 1);
-			sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+		trashButton.onclick = function (e) {
+			deleteTaskMassive(index);
+			deleteTaskWindow(e);
 		};
 
 		if (value.isCheck) {
@@ -113,8 +116,33 @@ function addToDo(event) {
 	});
 }
 
-// - Создание функции по удалению задачи и её выполнению
-function checkTask(e) {
+// - Создание функций по удалению задачи и её выполнению
+checkTaskMassive = (index) => {
+	// При первой итерации цикла - index = 0 - вешаем событие изменения isCheck
+	// При второй итерации цикла - index = 1 - вешаем событие изменения isCheck
+	// И т.д.
+	allTasks[index].isCheck = !allTasks[index].isCheck;
+	sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+};
+
+deleteTaskMassive = (index) => {
+	allTasks.splice(index, 1);
+	sessionStorage.setItem("allTasks", JSON.stringify(allTasks));
+};
+
+checkTaskWindow = (e) => {
+	const item = e.target;
+	// item = e.target; // - Свойство target является ссылкой на объект, который был инициатором события
+	if (item.classList[0] === "complete-btn") {
+		const todo = item.parentElement; // - Родительский элемент - div с классом todo (создается на строке 17-19)
+		todo.classList.toggle("completed");
+		todo.addEventListener("transitionend", () => {
+			addToDo();
+		});
+	}
+};
+
+deleteTaskWindow = (e) => {
 	const item = e.target;
 	// item = e.target; // - Свойство target является ссылкой на объект, который был инициатором события
 	if (item.classList[0] === "trash-btn") {
@@ -123,21 +151,10 @@ function checkTask(e) {
 		todo.addEventListener("transitionend", function () {
 			// - Событие transitionend срабатывает, когда CSS transition закончил своё выполнение. То есть срабатывает, когда анимация завершена
 			todo.remove();
+			addToDo();
 		});
-	} else if (item.classList[0] === "complete-btn") {
-		const todo = item.parentElement; // - Родительский элемент - div с классом todo (создается на строке 17-19)
-		todo.classList.toggle("completed");
 	}
-	// console.log(item.isCheck);
-}
-
-/**
- * Свойство classList вовращает псевдомассив, который содержит все классы элемента.
- * Допустим у элемента есть два класса: 'class_1' и 'class_2'.
- * class_1 имеет индекс 0, class_2 - индекс 1.
- * Чтобы получить доступ к одному из этих классов, можно воспользоваться свойством classList: element.classList[...].
- * element.classList[0] вернет 'class_1', element.classList[1] вернет 'class_2'
- */
+};
 
 function filterToDo(e) {
 	const todos = todoList.childNodes;
